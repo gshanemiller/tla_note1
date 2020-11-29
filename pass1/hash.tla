@@ -37,7 +37,7 @@ worker_begin:
 end process;
 
 end algorithm;*)
-\* BEGIN TRANSLATION (chksum(pcal) = "d8b4763d" /\ chksum(tla) = "f9330aa3") PCal-782ae353228cc15170c4590ec7433f1f
+\* BEGIN TRANSLATION (chksum(pcal) = "f020b36a" /\ chksum(tla) = "5a67e9fc") PCal-782ae353228cc15170c4590ec7433f1f
 CONSTANT defaultInitValue
 VARIABLES Hash, pc, stack, k_in, v_in, op_in
 
@@ -55,6 +55,7 @@ Init == (* Global variables *)
         /\ pc = [self \in ProcSet |-> "worker_begin"]
 
 perform_op_begin(self) == /\ pc[self] = "perform_op_begin"
+                          /\ PrintT(<<k_in[self],v_in[self],op_in[self]>>)
                           /\ IF op_in[self]=0
                                 THEN /\ TRUE
                                      /\ Hash' = Hash

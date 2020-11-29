@@ -12,4 +12,4 @@ pv:
 	open -a /System/Applications/Preview.app $(FILE).pdf
 
 clean:
-	rm -rf ./states $(FILE).old $(FILE).dot
+	rm -rf ./states $(FILE).old $(FILE).dot $(FILE).pdf
