@@ -1,11 +1,15 @@
 ----------------------------- MODULE hash -----------------------------
 EXTENDS     Integers, Sequences, FiniteSets, TLC
-CONSTANTS   HashKeyRange, ClientOps, Nil
+CONSTANTS   HashKey, ClientOps, Nil
 
 (*--algorithm junk
     
 variables
-    Hash = [hashKey \in HashKeyRange|-> Nil],
+    Hash = [hashKey \in HashRange |-> Nil],
+
+define
+    HashRange == 1..3
+end define;
 
 procedure PerformOp(k_in,v_in,op_in)
 begin
@@ -29,24 +33,29 @@ begin
 worker_begin:
     while (TRUE)
     do
-      with k \in HashKeyRange, v \in Int, op \in ClientOps
+      with k \in HashRange, v \in HashRange, op \in ClientOps
       do
-          call PerformOp(k,v,op)
+          call PerformOp(k, v ,op);
       end with;
     end while;
 end process;
 
 end algorithm;*)
-\* BEGIN TRANSLATION (chksum(pcal) = "7674dd8a" /\ chksum(tla) = "13ac9ec6") PCal-782ae353228cc15170c4590ec7433f1f
+\* BEGIN TRANSLATION (chksum(pcal) = "c7eaeb4e" /\ chksum(tla) = "73d8456c") PCal-782ae353228cc15170c4590ec7433f1f
 CONSTANT defaultInitValue
-VARIABLES Hash, pc, stack, k_in, v_in, op_in
+VARIABLES Hash, pc, stack
+
+(* define statement *)
+HashRange == 1..3
+
+VARIABLES k_in, v_in, op_in
 
 vars == << Hash, pc, stack, k_in, v_in, op_in >>
 
 ProcSet == (1..1)
 
 Init == (* Global variables *)
-        /\ Hash = [hashKey \in HashKeyRange|-> Nil]
+        /\ Hash = [hashKey \in HashRange |-> Nil]
         (* Procedure PerformOp *)
         /\ k_in = [ self \in ProcSet |-> defaultInitValue]
         /\ v_in = [ self \in ProcSet |-> defaultInitValue]
@@ -70,8 +79,8 @@ perform_op_begin(self) == /\ pc[self] = "perform_op_begin"
 PerformOp(self) == perform_op_begin(self)
 
 worker_begin(self) == /\ pc[self] = "worker_begin"
-                      /\ \E k \in HashKeyRange:
-                           \E v \in Int:
+                      /\ \E k \in HashRange:
+                           \E v \in HashRange:
                              \E op \in ClientOps:
                                /\ /\ k_in' = [k_in EXCEPT ![self] = k]
                                   /\ op_in' = [op_in EXCEPT ![self] = op]

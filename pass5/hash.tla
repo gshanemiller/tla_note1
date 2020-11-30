@@ -1,15 +1,11 @@
 ----------------------------- MODULE hash -----------------------------
 EXTENDS     Integers, Sequences, FiniteSets, TLC
-CONSTANTS   HashKey, ClientOps, Nil
+CONSTANTS   HashKey, HashValue, ClientOps, Nil
 
 (*--algorithm junk
     
 variables
-    Hash = [hashKey \in HashRange |-> Nil],
-
-define
-    HashRange == 1..3
-end define;
+    Hash = [hashKey \in HashKey |-> Nil],
 
 procedure PerformOp(k_in,v_in,op_in)
 begin
@@ -29,37 +25,36 @@ perform_op_begin:
 end procedure;
 
 fair process Worker \in 1..1
+variable n=0;
 begin
 worker_begin:
-    while (TRUE)
+    while (n<5)
     do
-      with k \in HashRange, v \in HashRange, op \in ClientOps
+      with k \in HashKey, v \in HashValue, op \in ClientOps
       do
+	  n := n+1;
           call PerformOp(k, v ,op);
       end with;
     end while;
 end process;
 
 end algorithm;*)
-\* BEGIN TRANSLATION (chksum(pcal) = "c7eaeb4e" /\ chksum(tla) = "73d8456c") PCal-782ae353228cc15170c4590ec7433f1f
+\* BEGIN TRANSLATION (chksum(pcal) = "63dadef5" /\ chksum(tla) = "7de9b827") PCal-782ae353228cc15170c4590ec7433f1f
 CONSTANT defaultInitValue
-VARIABLES Hash, pc, stack
+VARIABLES Hash, pc, stack, k_in, v_in, op_in, n
 
-(* define statement *)
-HashRange == 1..3
-
-VARIABLES k_in, v_in, op_in
-
-vars == << Hash, pc, stack, k_in, v_in, op_in >>
+vars == << Hash, pc, stack, k_in, v_in, op_in, n >>
 
 ProcSet == (1..1)
 
 Init == (* Global variables *)
-        /\ Hash = [hashKey \in HashRange |-> Nil]
+        /\ Hash = [hashKey \in HashKey |-> Nil]
         (* Procedure PerformOp *)
         /\ k_in = [ self \in ProcSet |-> defaultInitValue]
         /\ v_in = [ self \in ProcSet |-> defaultInitValue]
         /\ op_in = [ self \in ProcSet |-> defaultInitValue]
+        (* Process Worker *)
+        /\ n = [self \in 1..1 |-> 0]
         /\ stack = [self \in ProcSet |-> << >>]
         /\ pc = [self \in ProcSet |-> "worker_begin"]
 
@@ -75,23 +70,28 @@ perform_op_begin(self) == /\ pc[self] = "perform_op_begin"
                           /\ v_in' = [v_in EXCEPT ![self] = Head(stack[self]).v_in]
                           /\ op_in' = [op_in EXCEPT ![self] = Head(stack[self]).op_in]
                           /\ stack' = [stack EXCEPT ![self] = Tail(stack[self])]
+                          /\ n' = n
 
 PerformOp(self) == perform_op_begin(self)
 
 worker_begin(self) == /\ pc[self] = "worker_begin"
-                      /\ \E k \in HashRange:
-                           \E v \in HashRange:
-                             \E op \in ClientOps:
-                               /\ /\ k_in' = [k_in EXCEPT ![self] = k]
-                                  /\ op_in' = [op_in EXCEPT ![self] = op]
-                                  /\ stack' = [stack EXCEPT ![self] = << [ procedure |->  "PerformOp",
-                                                                           pc        |->  "worker_begin",
-                                                                           k_in      |->  k_in[self],
-                                                                           v_in      |->  v_in[self],
-                                                                           op_in     |->  op_in[self] ] >>
-                                                                       \o stack[self]]
-                                  /\ v_in' = [v_in EXCEPT ![self] = v]
-                               /\ pc' = [pc EXCEPT ![self] = "perform_op_begin"]
+                      /\ IF (n[self]<5)
+                            THEN /\ \E k \in HashKey:
+                                      \E v \in HashValue:
+                                        \E op \in ClientOps:
+                                          /\ n' = [n EXCEPT ![self] = n[self]+1]
+                                          /\ /\ k_in' = [k_in EXCEPT ![self] = k]
+                                             /\ op_in' = [op_in EXCEPT ![self] = op]
+                                             /\ stack' = [stack EXCEPT ![self] = << [ procedure |->  "PerformOp",
+                                                                                      pc        |->  "worker_begin",
+                                                                                      k_in      |->  k_in[self],
+                                                                                      v_in      |->  v_in[self],
+                                                                                      op_in     |->  op_in[self] ] >>
+                                                                                  \o stack[self]]
+                                             /\ v_in' = [v_in EXCEPT ![self] = v]
+                                          /\ pc' = [pc EXCEPT ![self] = "perform_op_begin"]
+                            ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
+                                 /\ UNCHANGED << stack, k_in, v_in, op_in, n >>
                       /\ Hash' = Hash
 
 Worker(self) == worker_begin(self)

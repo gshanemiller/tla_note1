@@ -30,6 +30,7 @@ begin
 worker_begin:
     while Cardinality(rpcs)>0
     do
+        \* r local to CHOOSE only
 	x := CHOOSE r \in rpcs: TRUE;
         rpcs := rpcs \ {x};
 	call PerformOp(x[1], x[2], x[3]);
