@@ -1,6 +1,6 @@
 ----------------------------- MODULE hash -----------------------------
 EXTENDS     Integers, Sequences, FiniteSets, TLC
-CONSTANTS   HashKey, ClientOps, Nil
+CONSTANTS   ClientOps, Nil
 
 (*--algorithm junk
     
