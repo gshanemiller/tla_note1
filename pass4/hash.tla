@@ -25,23 +25,23 @@ perform_op_begin:
 end procedure;
 
 fair process Worker \in 1..1
+variable x, rpcs = HashKey \X HashValue \X ClientOps;
 begin
 worker_begin:
-    while (TRUE)
+    while Cardinality(rpcs)>0
     do
-      with k \in HashKey, v \in HashValue, op \in ClientOps
-      do
-          call PerformOp(k,v,op)
-      end with;
+	x := CHOOSE r \in rpcs: TRUE;
+        rpcs := rpcs \ {x};
+	call PerformOp(x[1], x[2], x[3]);
     end while;
 end process;
 
 end algorithm;*)
-\* BEGIN TRANSLATION (chksum(pcal) = "d8b4763d" /\ chksum(tla) = "f9330aa3") PCal-782ae353228cc15170c4590ec7433f1f
+\* BEGIN TRANSLATION (chksum(pcal) = "4b6f0ae" /\ chksum(tla) = "5bb06a12") PCal-782ae353228cc15170c4590ec7433f1f
 CONSTANT defaultInitValue
-VARIABLES Hash, pc, stack, k_in, v_in, op_in
+VARIABLES Hash, pc, stack, k_in, v_in, op_in, x, rpcs
 
-vars == << Hash, pc, stack, k_in, v_in, op_in >>
+vars == << Hash, pc, stack, k_in, v_in, op_in, x, rpcs >>
 
 ProcSet == (1..1)
 
@@ -51,6 +51,9 @@ Init == (* Global variables *)
         /\ k_in = [ self \in ProcSet |-> defaultInitValue]
         /\ v_in = [ self \in ProcSet |-> defaultInitValue]
         /\ op_in = [ self \in ProcSet |-> defaultInitValue]
+        (* Process Worker *)
+        /\ x = [self \in 1..1 |-> defaultInitValue]
+        /\ rpcs = [self \in 1..1 |-> HashKey \X HashValue \X ClientOps]
         /\ stack = [self \in ProcSet |-> << >>]
         /\ pc = [self \in ProcSet |-> "worker_begin"]
 
@@ -66,23 +69,27 @@ perform_op_begin(self) == /\ pc[self] = "perform_op_begin"
                           /\ v_in' = [v_in EXCEPT ![self] = Head(stack[self]).v_in]
                           /\ op_in' = [op_in EXCEPT ![self] = Head(stack[self]).op_in]
                           /\ stack' = [stack EXCEPT ![self] = Tail(stack[self])]
+                          /\ UNCHANGED << x, rpcs >>
 
 PerformOp(self) == perform_op_begin(self)
 
 worker_begin(self) == /\ pc[self] = "worker_begin"
-                      /\ \E k \in HashKey:
-                           \E v \in HashValue:
-                             \E op \in ClientOps:
-                               /\ /\ k_in' = [k_in EXCEPT ![self] = k]
-                                  /\ op_in' = [op_in EXCEPT ![self] = op]
-                                  /\ stack' = [stack EXCEPT ![self] = << [ procedure |->  "PerformOp",
-                                                                           pc        |->  "worker_begin",
-                                                                           k_in      |->  k_in[self],
-                                                                           v_in      |->  v_in[self],
-                                                                           op_in     |->  op_in[self] ] >>
-                                                                       \o stack[self]]
-                                  /\ v_in' = [v_in EXCEPT ![self] = v]
-                               /\ pc' = [pc EXCEPT ![self] = "perform_op_begin"]
+                      /\ IF Cardinality(rpcs[self])>0
+                            THEN /\ x' = [x EXCEPT ![self] = CHOOSE r \in rpcs[self]: TRUE]
+                                 /\ rpcs' = [rpcs EXCEPT ![self] = rpcs[self] \ {x'[self]}]
+                                 /\ /\ k_in' = [k_in EXCEPT ![self] = x'[self][1]]
+                                    /\ op_in' = [op_in EXCEPT ![self] = x'[self][3]]
+                                    /\ stack' = [stack EXCEPT ![self] = << [ procedure |->  "PerformOp",
+                                                                             pc        |->  "worker_begin",
+                                                                             k_in      |->  k_in[self],
+                                                                             v_in      |->  v_in[self],
+                                                                             op_in     |->  op_in[self] ] >>
+                                                                         \o stack[self]]
+                                    /\ v_in' = [v_in EXCEPT ![self] = x'[self][2]]
+                                 /\ pc' = [pc EXCEPT ![self] = "perform_op_begin"]
+                            ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
+                                 /\ UNCHANGED << stack, k_in, v_in, op_in, x, 
+                                                 rpcs >>
                       /\ Hash' = Hash
 
 Worker(self) == worker_begin(self)

@@ -1,0 +1,51 @@
+#!/usr/bin/python
+
+class State:
+	def __init__(self, hash):
+		self.hash = {}
+		self.op   = None
+		self.k    = None
+		self.v    = None
+		for k in hash.iterkeys():
+			self.hash[k] = hash[k]
+
+	def copy(self):
+		c = State(self.hash)
+		c.op   = self.op
+		c.k    = self.k
+		c.v    = self.v
+		return c
+
+	def serialize(self):
+        	return "{0}, op={1}, key={2}, value={3}".format(self.hash, self.op, self.k, self.v)
+
+	def apply(self, op, k, v):
+		if op==0:
+			pass
+		elif op==1:
+			self.hash[k] = v
+		elif op==2 and k in self.hash:
+			del self.hash[k]
+		self.op = op
+		self.k  = k
+		self.v  = v
+
+Visited = {}
+Queue = [State({})]
+
+while len(Queue):
+	s = Queue[0]
+	Queue = Queue[1:]
+	key = s.serialize()
+	if key not in Visited:
+		Visited[key] = s
+		for k in [10,11]:
+			for v in [100,101]:
+				for op in [0,1,2]:
+					t = s.copy()
+					t.apply(op,k,v)
+					Queue.append(t)
+
+print("Made {0} nodes".format(len(Visited.keys())))
+for q in Visited.iterkeys():
+	print(q)
