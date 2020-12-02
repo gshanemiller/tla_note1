@@ -123,10 +123,11 @@ $ git clone https://github.com/\
 rodgarrison/tla_note1.git
 $ cd tla_note1
 $ ls
-Makefile	hash.cfg	hash.tla
+README.md pass1  pass2  pass4  pass6  pass8
+doc       pass10 pass3  pass5  pass7. pass9
 \end{verbatim}
 
-The \texttt{TLA+} the division of work is that \texttt{.tla} files define the model, possibly including other \texttt{.tla} files through the \texttt{EXTENDS} keyword, while \texttt{.cfg} files contain constants used in the model referenced in \texttt{.tla} files. \texttt{Makefile} is an optional hand-added convenience to execute \texttt{TLA+}. The default target \texttt{all} converts the PlusCal code in \texttt{hash.tla} then runs the model checker on the result. The optional fragment \texttt{-dump dot,colorize \$(FILE).dot} tells \texttt{TLA} to produce an AT\&T compatible \texttt{.dot} file representing the states it found and transitions between them. The makefile \texttt{dot} target converts the \texttt{.dot} file into a PDF and display it. Obviously you must have the \texttt{dot} utility pre-installed. Modify the second command in that target to taste; it's currently setup for \texttt{MacOS}.
+The \texttt{TLA+} the division of work is that \texttt{.tla} files define the model, possibly including other \texttt{.tla} files through the \texttt{EXTENDS} keyword, while \texttt{.cfg} files contain constants used in the model referenced in \texttt{.tla} files. \texttt{Makefile} is an optional hand-added convenience to execute \texttt{TLA+}. The default target \texttt{all} converts the PlusCal code in \texttt{hash.tla} then runs the model checker on the result. The optional fragment \texttt{-dump dot,colorize,actionlabels \$(FILE).dot} tells \texttt{TLA} to produce an AT\&T compatible \texttt{.dot} file representing the states it found and transitions between them. The makefile \texttt{dot} target converts the \texttt{.dot} file into a PDF and display it. Obviously you must have the \texttt{dot} utility pre-installed. Modify the second command in that target to taste; it's currently setup for \texttt{MacOS}.
 
 It's important to know that the conversion of a \texttt{.tla} file in PlusCal syntax is converted to native \texttt{TLA+} syntax by writing the output into the same file! You don't get a second file out. Here the PlusCal lexer/parser is very unforgiving. You must adhere to several rules,
 
@@ -161,9 +162,11 @@ Enter a constant-level TLA+ expression.
 
 % ----------------------------------------------
 \subsection{Hash Model: Pass1 - Orientation}
-I now model a hashing function which relates a key to a value. Modeling means choosing safety and liveness concerns that constitute first order risk. Other issues are deferred. In this first note, the hash will have one bucket per key and no hashing function. In fact, I'll leverage a built-in \texttt{TLA+} type called a record or structure that natively relates keys to values. The hash will be of finite size. Keys and values will be integers in a limited range. This approach eliminates need for a equality value operator since hash collisions can't happen. The model allows for an \emph{infinite number} of hash operations in arbitrary order. From there I'll model a finite number of calls, followed by arbitrary integers. Distributed operations and/or replication of KV state will await future notes.
+I now model a hashing function which relates a key to a value. In this first note, the hash will have one bucket per key and no hashing function. In fact, I'll leverage a built-in \texttt{TLA+} type called a record or structure that natively relates keys to values. The hash will be of finite size. Keys and values will be integers in a limited range. This approach eliminates need for a equality value operator since hash collisions can't happen. The model allows for an \emph{infinite number} of hash operations in arbitrary order. From there I'll model a finite number of calls, followed by arbitrary integers. Distributed operations and/or replication of KV state will await future notes.
 
-\texttt{TLA+} comes with a type called variously \emph{record} or \emph{structure} of the form $[a_1 | -> b_1, a_2 | -> b_2, \ldots]$ where the $a_n$ are like keys, and the $b_n$ are like values. The infix arrow is written pipe character, minus character, then greater-than character without intervening spaces. More formally what appears between brackets is a function whose domain is the $a_n$ mapped to elements in the range indicated by the $b_n$ e.g. taking $a_1$ in the domain or pre-image to $b_1$ in the image or range. The type of $a_n, b_n$ is arbitrary usually integers, strings, booleans, sequences/tuples, or sets. This will hold our hash. Once the hash is assigned to a variable, one writes \texttt{hash[key]:=value} for \texttt{PUT} operations, \texttt{hash[key]} read, and \texttt{hash[key]:=Nil} delete. \texttt{TLA} records do not support dynamic addition or removal in the domain/range. To handle the case where a key doesn't exist in the map we fallback to a unique constant \texttt{Nil} so that the \texttt{TLA} hash $[10 | -> 100, 11 | -> Nil]$ means the same thing as Python \texttt{\{10->100\}}.
+\texttt{TLA+} comes with a type called variously \emph{record} or \emph{structure} of the form $[a_1 | -> b_1, a_2 | -> b_2, \ldots]$ where the $a_n$ are like keys, and the $b_n$ are like values. The infix arrow is written pipe character, minus character, then greater-than character without intervening spaces. More formally what appears between brackets is a function whose domain is the $a_n$ mapped to elements in the range indicated by the $b_n$ e.g. taking $a_1$ in the domain or pre-image to $b_1$ in the image or range. The type of $a_n, b_n$ is arbitrary usually integers, strings, booleans, sequences/tuples, or sets. This will hold our hash. 
+
+Once the hash is assigned to a variable, one writes \texttt{hash[key]:=value} for \texttt{PUT} operations, \texttt{hash[key]} read, and \texttt{hash[key]:=Nil} delete. \texttt{TLA} records do not support dynamic addition or removal in the domain/range. To handle the case where a key doesn't exist in the map we fallback to a unique constant \texttt{Nil} so that the \texttt{TLA} hash $[10 | -> 100, 11 | -> Nil]$ means the same thing as Python \texttt{\{10->100\}}.
  
 Let's relate these bits to file contents in the \texttt{tla\_note1/pass1} subdirectory. The file \texttt{hash.cfg} names our constants explicitly defining allowable keys to be either 10 or 11 while allowable values are 100, 101. There was no reason to make their intersection empty other than to make them standout. The file also defines \texttt{Nil}, and contains a mandatory \texttt{SPECIFICATION Spec} fragment. \texttt{Spec} is what the tool will verify and is defined in \texttt{hash.tla}. \texttt{Spec} is the model capturing all the checks we want verified as computed by PlusCal after lex/parse.
 
@@ -177,13 +180,13 @@ Programmers will recognize the quasi-universal function or procedure form with f
 
 Procedures don't return values. In \texttt{TLA+} returning data must happen through global variables often with the keyword \texttt{self}. \texttt{self} behaves like Python's \texttt{self} except that it for choosing one's own PID. As such global variables may be indexed by \texttt{self} to pass or return data cleanly stratified by a process identifier.
 
-Procedures must contain and hit a \texttt{return} statement otherwise \texttt{TLA+} concludes deadlock. Deadlock detection is enabled by default in the toolbox, but is off by default on the command line. Since deadlock detection can be off procedures missing \texttt{return} commands will lead to confusion: your specification will behave unexpectedly. 
+Procedures must contain and hit a \texttt{return} statement otherwise \texttt{TLA+} concludes deadlock. Deadlock detection is enabled by default in the toolbox, and on the command line. But since deadlock detection can be turned off procedures missing \texttt{return} commands will lead to confusion: your specification will behave unexpectedly. 
 
 Procedure and process code is delimited by \emph{labels}. These are single line alpha-numeric strings delimited by a colon \emph{ex.} \texttt{expanded\_loop\_start:}. PlusCal conversion requires labels in certain locations, for example, just before the start of while loop. It'll report errors if missing. And in a few cases, PlusCal disallows labels within code blocks. \texttt{await} is one notable case.
 
 Code between labels is performed as an atomic step within the process that's running or invoking it. Consequently you decide how much or how little code is run to effect state change. More labels means a more granular step-wise change flow creating more states for \texttt{TLA+} to check. Beyond atomicity, more labels can --- depending on what is shared gloabally --- leak information to other processes of procedures. This may be leveraged to the good, or it may cause confusion.
 
-More precisely, \texttt{TLA+} treats the label names like CPU \texttt{CS:IP} locations. Execution jumps in discrete steps label to label. Moreover, whenever a state step has been evaluated reaching the end of its labeled code block, \texttt{TLA+} finds all labels that are reachable from state state in all processes. Those labeled code blocks are queued for evaluation next. Failure to find next steps is called \texttt{deadlock} except when the process is sitting on \texttt{end process}. 
+More precisely, \texttt{TLA+} treats the label names like CPU \texttt{CS:IP} locations. Execution jumps in discrete steps label to label. Moreover, whenever a state step has been evaluated reaching the end of its labeled code block, \texttt{TLA+} finds all labels that are reachable from that state in all processes. Those labeled code blocks are queued for evaluation next. Failure to find next steps is called \texttt{deadlock} except when the process is sitting on \texttt{end process}. 
 
 There are more facets to this model, and this description omits numerous important details. That'll come later. Right now it's time to run the model.
 
@@ -217,7 +220,7 @@ If we assign the label 1 to the first 3-tuple of the Cartesian product $\text{Ha
 \item For each set $s \in P$: Total = Total + factorial(cardinality(s))
 \end{enumerate}
 
-Note that the number of permutations in a set of cardinality $N$ is $N!$ This estimates the count of all possible sequences of KV calls to \texttt{PerformOp} which, among others, include,
+Note that the number of permutations in a set of cardinality $N$ take $N$ is $N!$ This estimates the count of all possible sequences of KV calls to \texttt{PerformOp} which, among others, include,
 
 \begin{itemize}
 \item Each one sequence of the 12 KV operations
@@ -259,7 +262,7 @@ Note that \texttt{.dot} files are not the only way to visualize model state or b
 Before changing focus to a more \texttt{TLA+} tooling mode, there remain two unexplored issues relative to model states. First, one should have passing knowledge on how model states are generated. It isn't hard: it's based on depth first graph generation of successor states. A toy, Python example is provided for hashing. Second, the dueling perspectives of imperative \emph{v.} modeling isn't completely resolved. This is the more complicated problem both caught up in, and resolved by breadth first graphs. The model state graph generation runs like this:
 
 \begin{enumerate}
-\item Let G be a graph of nodes, edges
+\item Let G be an empty graph of nodes, edges
 \item Let visited, a dictionary, be empty
 \item Let queue, an array, equal initial state
 \item While queue not empty do
@@ -269,7 +272,7 @@ Before changing focus to a more \texttt{TLA+} tooling mode, there remain two une
 	\item If s in visited, jump to while above
 	\item If s fails an invariant, produce counter-example. Stop.
 	\item Put s into visited
-	\item Add s to G. Add an edge from s to s (stuttering)
+	\item Add s to G
 	\item Let succ, array, be successor states from s
 	\item For t in succ add an outgoing edge from s to t
 	\item Append succ to queue
@@ -288,10 +291,10 @@ For example, suppose \texttt{TLA+} marks the initial state $I_0$, and the first 
 
 Two final points are needed. First, \texttt{TLA+} won't have done its job if the graph fails to have the right number of nodes, or the right number of incoming and outgoing edges to the right nodes. For performance and conceptual reasons I earlier gave emphasis to node count for modeling, but pathways through edges for programming. The truth is \texttt{TLA+} can't run and hide from either. 
 
-Second, successor operations are always applied against $s$ in step \texttt{(4g)}). The problem, however, is \texttt{(4g)} doesn't make it abundantly clear how this works. The key insight is to recall $s$ contains all variables, and their values from all processes. \texttt{(4g)} may then be read like this:
+Second, successor operations are always applied against $s$ in step \texttt{(4g)}. The problem, however, is \texttt{(4g)} doesn't make it abundantly clear how this works. The key insight is to recall $s$ contains all variables, and their values from all processes. \texttt{(4g)} may then be read like this:
 
 \begin{itemize}
-\item Let succ=$[]$
+\item Let succ=$[\ ]$
 \item Let $L=\{l|l\ \text{valid, enabled label from\ } s\}$
 \item For each $l \in L$
 	\begin{itemize}
@@ -318,7 +321,7 @@ Thus far the model's behavior is infinite: KV operations are run without bound s
 
 In \texttt{pass6/hash.tla} I relax the hash key, values to a less arbitrary integer not a value from a finite set. In fact it's not possible to ask \texttt{TLA+} to use an arbitrary integer or natural number. \texttt{TLA+} can choose arbitrarily, however, only from an enumerable set or bounded range. Since constants are not applicable here, I define \texttt{HashRange} to be a bounded interval from which \texttt{TLA+} chooses. This isn't markedly different from \texttt{pass1/hash.tla}; it's mildly more configurable. But it makes clear that even small increments in range drive up reachable state counts exponentially. A range of \texttt{[1..2]} gives 117 distinct states, \texttt{[1..3]} 1732 states, and \texttt{[1..6]} 12,823,741 states taking four minutes to find.
 
-One can extract two practical conclusions: infinite behavior models are comprehensive, and may even take fewer lines to model. Prefer those. Second, obsessing about value ranges isn't smart most of the time. What is smart is allowing \texttt{TLA+} to choose arbitrary values for you within a bounded range, or finite set. Model evaluation will happen faster, and you are more likely to see errors since you have not excluded value or proscribed ordering. Readers should see \texttt{CHOOSE, EITHER}, and \texttt{WITH} for more options on the same theme.
+One can extract two practical conclusions: infinite behavior models are comprehensive, and may even take fewer lines to model. Prefer those. Second, obsessing about value ranges isn't smart most of the time. What is smart is allowing \texttt{TLA+} to choose arbitrary values for you within a bounded range, or finite set. Model evaluation will happen faster, and you are more likely to see errors since you have not excluded values or proscribed ordering. Readers should see \texttt{CHOOSE, EITHER}, and \texttt{WITH} for more options on the same theme.
 
 % ----------------------------------------------
 \subsection{Coverage Checks}
@@ -344,7 +347,7 @@ The number following the trailing colon counts how many times that line in the P
 \subsection{Termination}
 PlusCal can optionally check for process termination by adding the switch \texttt{-termination} to its command line. The translation will add a \texttt{Done} label at \texttt{end process} with a temporal formulae that it must eventually become a visited state. This is demonstrated two ways in \texttt{pass8/term1.tla, pass8/term2.tla}. The first model is a copy of \texttt{pass5/hash.tla} while \texttt{term2.tla} is a copy of \texttt{pass1/hash.tla} but with termination enabled. Run \texttt{make term1} or \texttt{make term2} to evaluate the models.
 
-\texttt{pass8/term1.tla} is error free with respect to termination because the while loop eventually becomes false. When false, the \texttt{Done} label becomes an enabled successor. However, \texttt{pass8/term2.tla} fails because, with respect to termination, the while loop does not terminate. From a model state generation perspective, as note earlier, \texttt{TLA+} realizes all reachable states have been \texttt{visited} moving to other concerns like termination whereby it termination is not possible.
+\texttt{pass8/term1.tla} is error free with respect to termination because the while loop eventually becomes false. When false, the \texttt{Done} label becomes an enabled successor. However, \texttt{pass8/term2.tla} fails because, with respect to termination, the while loop does not terminate. From a model state generation perspective, as note earlier, \texttt{TLA+} realizes all reachable states have been \texttt{visited} moving to other concerns like termination whereby it sees termination is not possible.
 
 When a safety, liveness, or other temporal formula fails \texttt{TLA+} gives a counter-example (to the invariant) read top to bottom from state 1 (initial) to the last state $N$. The trace is a kind of stack trace for models showing how the initial state was transformed by labeled code blocks into bad state. In \texttt{pass8/term2.tla} we find (elided):
 
@@ -369,18 +372,18 @@ This isn't always easy to interpret but be assured the information is there. The
 
 Here's a variation on termination. In the subdirectory \texttt{tla\_note1/pass9} I model a producer process which appends integers to the end of a list, and a consumer process which dequeues the head of the list. Run \texttt{make term1}. After a few seconds, press CTRL-C. It'll never stop running because it'll never stop finding more states. Now run \texttt{make term2}, which runs the same model as \texttt{term1} but with termination checks. It will end with an error since this model won't terminate. 
 
-Now inspection of \texttt{pass9/term.tla} might suggest a variation on \texttt{pass1/hash.tla} granted with two processes in that \texttt{TLA+} ought to be able to find all reachable states. Indeed, we've seen infinite behavior on a finite number of states before, and \texttt{TLA+} did terminate there. However, unlike the hash example, the length of \texttt{Queue} is unbounded. In the hash example, there were only a bounded number of number of keys, and values therefore only a bounded number of reachable states. Here the producer process can always append numbers faster than the consumer can dequeue them. That means \texttt{TLA+} has to check the empty queue, queue of length 1, then 2, and so on on all permutations of contents in the queue. In such a case (assuming fairness; see below) the depth first graph generation of states will always have a non-empty queue.
+Now inspection of \texttt{pass9/term.tla} might suggest a variation on \texttt{pass1/hash.tla} granted with two processes in that \texttt{TLA+} ought to be able to find all reachable states. Indeed, we've seen infinite behavior on a finite number of states before, and \texttt{TLA+} did terminate there. However, unlike the hash example, the length of \texttt{Queue} is unbounded. In the hash example, there were only a bounded number of number of keys, and values therefore only a bounded number of reachable states. Here the producer process can always append numbers faster than the consumer can dequeue them. That means \texttt{TLA+} has to check the empty queue, queue of length 1, then 2, and so on on all permutations of contents in the queue. In such a case (assuming fairness) the depth first graph generation of states will always have a non-empty queue.
 
 % ----------------------------------------------
 \subsection{Deadlock}
 Quoting Lamport cite
 
-\begin{quote} An algorithm is deadlocked if it has not terminated, but it can take no further step. A process has terminated if it has reached the end of its code, so control is at the implicit Done label that ends its body.
+\begin{quote} An algorithm is deadlocked if it has not terminated, but it can take no further step. A process has terminated if it has reached the end of its code, so control is at the implicit \texttt{Done} label that ends its body.
 \end{quote}
 
 \noindent Termination is about never eventually visiting the \texttt{Done} label, which was co-located within the code at \texttt{end process}. On the other hand, deadlock is about no successor states except in the case of termination. Deadlock then is a more expansive concept than, say, merely buggy lock code. In fact, writing lock code in \texttt{TLA+} is less about deadlock per se than it is about temporal formulae that prove no two threads are in the critical section, and threads wanting the lock eventually get it. Locking is a fairly solved problem anyway. 
 
-Instead, this section's example is the dining philosopher problem. There's $N$ philosophers who dine together around a circular table. Each person has a plate in front of them, and forks to their left and right. Three modes of behavior are possible. If they are \texttt{hungry}, they grab forks to their left, and right if not used and go into the \emph{eating} mode. Once they are done eating, they revert to the \emph{thinking} mode. And when they are done thinking, they go into the \emph{hungry} mode again. The challenge is to model the three modes without deadlock. Deadlock happens when a philosopher cannot transition into another behavior. 
+Instead, this section's example is the dining philosopher problem. There's $N$ philosophers who dine together around a circular table. Each person has a plate in front of them, and forks to their left and right. Three modes of behavior are possible. If they are \emph{hungry}, they grab forks to their left, and right if not used and go into the \emph{eating} mode. Once they are done eating, they revert to the \emph{thinking} mode. And when they are done thinking, they go into the \emph{hungry} mode again. The challenge is to model the three modes without deadlock. Deadlock happens when a philosopher cannot transition into another behavior. 
 
 \texttt{pass10/deadlock.tla} gives a model with $N=3$ taking the description straight into code. Now while it's obvious that there will be contention around forks --- adjacent philosophers always share a fork between them when sitting in a circle --- it seems like every person will make progress. There has to be some time at which two forks are available. Running the model shows that deadlock occurs after checking some 1800 distinct states with a counter-example that consists of 13 steps away from the initial state. In particular, the trace shows this 13th state:
 
@@ -394,7 +397,7 @@ State 13: <P line 107, col 12 to line 114,
 /\ fork = (0 :> 1 @@ 1 :> 2 @@ 2 :> 0)
 \end{verbatim}
 
-All philosophers are in hungry mode, and each philosopher has one fork each \emph{i.e.} diner 0 has fork 1, diner 1 fork 2, and diner 2 fork 0. In addition they are all on label $E$ where they are waiting to get their second fork. But no fork is available. States 11 and 12 show two of the three philosopher's getti
+All philosophers are in hungry mode, and each philosopher has one fork each \emph{i.e.} diner 0 has fork 1, diner 1 fork 2, and diner 2 fork 0. In addition they are all on label $E$ where they are waiting to get their second fork. But no fork is available. States 11 and 12 (not shown) record the first two philosopher's getting their first fork so that, at state 13, they are deadlocked. 
 
 Turning deadlock detection off shows 1959 distinct states with a depth of 19. Thus the deadlock scenario doesn't happen immediately. Deadlock detection is enabled by default in both the IDE and on the command line. Confusingly, the command line switch \texttt{-deadlock} disables deadlock detection. See \texttt{TLA's} usage line by running \texttt{runtla -h} for more information.
 
@@ -437,17 +440,24 @@ This note describes how \texttt{TLA+} models states through the dueling perspect
 
 This treatment, however, is woefully incomplete. For example, deadlock has strong connections to fairness which went unexamined. Notable tooling options were not discussed either. To contend with large state models, \texttt{TLA+} provides certain bounding constraints, and filtering modes that narrow \texttt{TLA}'s work to a subset of the full state space. PlusCal, while adequate for a lot of work, cannot do everything native \texttt{TLA+} can. Therefore programmers should be versed in writing native models, or at least know how to work in the last bits into native \texttt{TLA+} combining it with what PlusCal produces. Finally, the KV store examined here is trivial failing to admit uncontrived safety or liveness checks. 
 
-The KV store here is part of a larger effort to formally model Stanford's \texttt{RAM}Cloud, a distributed KV system with durable writes cite. Future notes therefore will eventually address all of the following,
+This KV store work is part of a larger effort to formally model Stanford's \texttt{RAM}Cloud, a distributed KV system with durable writes cite. Future notes therefore will eventually address fairness, safety, liveness checks, temporale formulae all within the context of a true, complex distributed KV store.
 
-\begin{itemize}
-\item Fairness
-\item Safety, liveness checks
-\item Temporale formulae
-\item All within the context of a true, complex distributed KV store
-\end{itemize}
 % ==============================================
 \section{TLA+ Resources}
+\texttt{TLA+} was originally developed by Leslie Lamport of PAXOS fame. It's a mature tool with considerable support extending to proof systems in other modes. Readers will easily find books, papers, videos, examples, and extensive documentation. \texttt{TLA+} is often used in university, and industry \emph{e.g.} Amazon:
 
+\begin{enumerate}
+\item \href{https://github.com/tlaplus}{GITHUB TLA+ organization}
+\item \href{https://lamport.azurewebsites.net/video/videos.html}{TLA+ video set}
+\item \href{https://www.apress.com/gp/book/9781484238288}{Practical TLA+: Planning Driven Development} by Hillel Wayne
+\item \href{https://groups.google.com/g/tlaplus}{Google TLA usenet group}
+\item \href{https://lamport.azurewebsites.net/tla/book-02-08-08.pdf}{Specifying Systems} by Leslie Lamport which also describes how \texttt{TLA+} works
+\item \href{https://lamport.azurewebsites.net/tla/p-manual.pdf}{A PlusCal User’s Manual} by Leslie Lamport
+\item \href{https://lamport.azurewebsites.net/}{Leslie Lamport's TLA+ website}
+\item \href{https://tinyurl.com/y5jef4bk}{Specifying Systems: The TLA+ Language and Tools for Hardware and Software Engineers} by Leslie Lamport.
+\end{enumerate}
+
+\texttt{TLA}'s backend also has plug-ins or substitutions that provide alternate model checking algorithms. For example, \href{https://blog.acolyer.org/2019/11/29/tla-model-checking-made-symbolic/}{APALACHE} is one such system that can out perform \emph{defacto} \texttt{TLA+} under some circumstances.
 % ==============================================
 \bibliographystyle{acm}
 \bibliography{eng}
