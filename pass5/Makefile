@@ -2,7 +2,7 @@ FILE="hash"
 
 all:
 	runpcal $(FILE)
-	runtla -dump dot,colorize $(FILE).dot $(FILE)
+	runtla -dump dot,colorize,actionlabels $(FILE).dot $(FILE)
 
 dot: all
 	dot $(FILE).dot -o$(FILE).pdf -Tpdf

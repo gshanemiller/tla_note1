@@ -25,7 +25,7 @@ Broadly speaking there are three levels of programming complexity: single-thread
 \section{Introduction}
 A software boss calls an impromptu meeting where he explains that, because sales is onboarding a new strategic customer, the team will be redirected to complete an estimated six quarters of work over fifteen Agile epics or feature sets. While this is real work, the team is not unduly stressed. After all their business lead will deliver a written description of the epics, and help decompose that work into multiple Agile stories for execution over two-week sprints. Being well versed in Agile processes, the programming team is quite able to turn those plans into code. The programmers also know that, as time elapses, some features may be discarded while others may grow more complicated, or require a redo as the team's collective judgement warrants. Agile is about risk reduction, and better team communication. It cannot eliminate all risk.
 
-Now consider another software boss across the street in a similar meeting. Except that in this case, the boss says he will require a formal model be co-developed with the code. In some circles this may be met with appreciation. But in other circles this causes serious concern. Formal methods is a whole other work discipline that doesn't automatically fallout of C/C++/GO know-how. And besides will it really help? The programmers here know what the guys across the street know: features change in scope, size, and shape carry into code. That translation isn't always  straightforward even in single threaded cases. Industrial programming uses third party libraries which are not formally verified and probably can't be without obliterating available resources. Even more worrying is that the specification may be wrong, or fail to be carried intact into code undoing indeed even mocking the formal work.
+Now consider another software boss across the street in a similar meeting. Except that in this case, the boss says he will require a formal model be co-developed with the code. In some circles this may be met with appreciation. But in other circles this causes serious concern. Formal methods is a whole other work discipline that doesn't automatically fallout of C/C++/GO know-how. And besides will it really help? The programmers here know what the guys across the street know: features change in scope, size, and shape which carries over to code. That translation isn't always  straightforward even in single threaded cases. Industrial programming uses third party libraries which are not formally verified and probably can't be without obliterating available resources. Even more worrying is that the specification may be wrong, or fail to be carried intact into code undoing indeed even mocking the formal work.
 
 So, what's wisdom here? Formal methods are like Agile but in another subject matter arena: specification. Formal methods ask us to name then define safety and liveness properties, which are important sub-categories of functional behavior. Safety properties say what the system must do. Formal methods try to find counter-examples which violate safety. Liveness concerns itself with proving or disproving through counter-examples that the system is not deadlocked, and that threads are making progress towards their post conditions. 
 
@@ -39,11 +39,11 @@ Both modalities provide the programmer with two writing tools: writing state and
 
 Formal methods are about project risk reduction: getting something to beta or production without fear the system will be continually beset with bad state, timeouts, or bad recovery after crashing. It can be about a company's street reputation: can we engineer complicated systems that work two days in a row? Work under duress or local failure?
 
-Moving from a programmer mentality telling the CPU do this, then do that, then run this loop $N$ times is certainly helpful in modeling. Indeed, a classical imperative program is kind of a constructive proof (when bug free) that takes a system or function call from its preconditions to its post conditions. There's real benefit here. So when programmers first see a formal tool's notions of conditions, types, loops, invariants, or state exploration, we find them accessible. 
+Moving from a programmer mentality telling the CPU do this, then do that, then run this loop $N$ times is certainly helpful in modeling. Indeed, a classical imperative program is kind of a constructive proof (when bug free) that takes a system or function call from its preconditions to its post conditions. So when programmers first see a formal tool's notions of conditions, types, loops, invariants, or state exploration, we find them accessible. 
 
 Nevertheless, it's still easy to get lost in modeling. Modeling is more like SQL: we say what we want done without saying how it gets done. It's hard to peek behind the curtain. Unexpected outcomes --- including, say, no reported errors --- may leave one anxious wondering \emph{how} the error happened or indeed whether the tool checked what we hoped it did. This confusion has the nasty tendency to turn over on itself making the specification unclear in its effects. A programmer may find himself stuck: if one can't understand how the specification is applied, one can't know where he lands nor can one tweak the specification to a certain, better end.
 
-Another challenge is avoiding one's programming muscle memory whereby we write imperative code in the formal language. This tendency has two ill-effects. First, it necessarily locks in or bounds reachable states or values through the implementation. In other words it tends to implicitly and silently prelude buggy behavior that the real system might have. Second, it can be too compl\emph{ex.} For example, passing messages in queues across a network reliably turns on macro level things like no overflow, no loss of message, exactly once message processing, and no thread waits forever to send or receive messages. It does not turn on micro level things like memory layout, serialization format of messages, or whether Berkeley sockets or \texttt{HTTP GET/PUT} is used. Modelers may reasonably assume subject to unit and integration testing, professionals can take macro to micro once the harder problems are solved.
+Another challenge is avoiding one's programming muscle memory whereby we write imperative code in the formal language. This tendency has two ill-effects. First, it necessarily locks in or bounds reachable states or values through the implementation. In other words it tends to implicitly and silently prelude buggy behavior that the real system might have. Second, it can be too complex. For example, passing messages in queues across a network reliably turns on macro level things like no overflow, no loss of message, exactly once message processing, and no thread waits forever to send or receive messages. It does not turn on micro level things like memory layout, serialization format of messages, or whether Berkeley sockets or \texttt{HTTP GET/PUT} is used. Modelers may reasonably assume subject to unit and integration testing, professionals can take macro to micro once the harder problems are solved.
 
 In this note we explore these issues for a hash based key-value store by specifying a model with attention to states in all their forms. Through exposition I attempt to \texttt{SQL EXPLAIN} what \texttt{TLA+} does. In later notes I'll expand this work to include temporal formulae, safety, and liveness. A KV store is both intuitively accessible while sufficiently complicated to engage and disposition how best to use a formal tool. I will work in \texttt{TLA+} PlusCal syntax, which is model based. 
 
@@ -55,7 +55,7 @@ A non-goal is reviewing all of \texttt{TLA+}'s commands or modes. I limit the ex
  
 % ===============================================
 \section{Preliminaries}
-To get your environment ready, \texttt{GIT} clone \href{https://github.com/tlaplus/tlaplus.git}{TLA+}. \texttt{TLA+} is JAVA and uses \texttt{ant} to build it. While it's work to install \texttt{JAVA, ant} \texttt{TLA} is far easier to build than a similarly complex C/C++ program. Run the following commands or suitable variations thereto. Because of formatting, I've written backslash ($\backslash$) to indicate line continuation. In your real commands, those lines would be on a single line omitting `$\backslash$':
+To get your environment ready, \texttt{GIT} clone \href{https://github.com/tlaplus/tlaplus.git}{TLA+}. \texttt{TLA+} is JAVA and uses \texttt{ant} to build it. While it's work to install \texttt{JAVA, ant} \texttt{TLA+} is far easier to build than a similarly complex C/C++ program. Run the following commands or suitable variations thereto. Because of formatting, I've written backslash ($\backslash$) to indicate line continuation. In your real commands, those lines would be on a single line omitting `$\backslash$':
 
 \begin{verbatim}
 $ cd $HOME
@@ -131,7 +131,7 @@ The \texttt{TLA+} the division of work is that \texttt{.tla} files define the mo
 It's important to know that the conversion of a \texttt{.tla} file in PlusCal syntax is converted to native \texttt{TLA+} syntax by writing the output into the same file! You don't get a second file out. Here the PlusCal lexer/parser is very unforgiving. You must adhere to several rules,
 
 \begin{itemize}
-\item The first line must be a bunch of equal characters with the name of model matching the filename it's in minus the .tla extension
+\item The first line must include the filename without its extension surrounded by at least four dashes both sides
 \item Followed by EXTEND commands, CONSTANT commands. Symbols may span lines comma separated and are unterminated by a semi-colon
 \item Followed by a TLA comment of the form \texttt{(*--algorithm <name>} where \texttt{name} is a meaningful single string without spaces
 \item Followed by PlusCal code
@@ -367,32 +367,86 @@ Back to state 1: <perform_op_begin line 57,
  
 This isn't always easy to interpret but be assured the information is there. The location information on lines beginning with ``State $N$:" is the source node state location. The data following this line gives the state (at destination node) after doing the work indicated by label \texttt{pc=}. Note the pc labels alternate \texttt{worker\_begin}, \texttt{perform\_op\_begin}. One interprets this as meaning \texttt{TLA+} found an infinite cycle in the model \emph{viz} \texttt{.dot} which prevents the process from ever visiting \texttt{Done}.
 
+Here's a variation on termination. In the subdirectory \texttt{tla\_note1/pass9} I model a producer process which appends integers to the end of a list, and a consumer process which dequeues the head of the list. Run \texttt{make term1}. After a few seconds, press CTRL-C. It'll never stop running because it'll never stop finding more states. Now run \texttt{make term2}, which runs the same model as \texttt{term1} but with termination checks. It will end with an error since this model won't terminate. 
+
+Now inspection of \texttt{pass9/term.tla} might suggest a variation on \texttt{pass1/hash.tla} granted with two processes in that \texttt{TLA+} ought to be able to find all reachable states. Indeed, we've seen infinite behavior on a finite number of states before, and \texttt{TLA+} did terminate there. However, unlike the hash example, the length of \texttt{Queue} is unbounded. In the hash example, there were only a bounded number of number of keys, and values therefore only a bounded number of reachable states. Here the producer process can always append numbers faster than the consumer can dequeue them. That means \texttt{TLA+} has to check the empty queue, queue of length 1, then 2, and so on on all permutations of contents in the queue. In such a case (assuming fairness; see below) the depth first graph generation of states will always have a non-empty queue.
+
 % ----------------------------------------------
 \subsection{Deadlock}
-``An algorithm is deadlocked if it has not terminated, but it can take no further step. A process has terminated if it has reached the end of its code, so control is at the implicit Done label that ends its body. The most likely way for a uniprocess algorithm to deadlock is for a procedure call to `fall off the end' without executing a return statement --- that is, for it to reach the implicit label Error that ends the procedure body. A multiprocess algorithm is deadlocked if no process can take a step, but some process has not terminated." cite
+Quoting Lamport cite
 
-Unlike in the IDE, command line deadlock detection is not enabled by default. So missing \texttt{return} statements may be hard to catch without termination or deadlock detection on. To enable deadlock detection pass \texttt{-deadlock} to \texttt{TLA+}. 
+\begin{quote} An algorithm is deadlocked if it has not terminated, but it can take no further step. A process has terminated if it has reached the end of its code, so control is at the implicit Done label that ends its body.
+\end{quote}
+
+\noindent Termination is about never eventually visiting the \texttt{Done} label, which was co-located within the code at \texttt{end process}. On the other hand, deadlock is about no successor states except in the case of termination. Deadlock then is a more expansive concept than, say, merely buggy lock code. In fact, writing lock code in \texttt{TLA+} is less about deadlock per se than it is about temporal formulae that prove no two threads are in the critical section, and threads wanting the lock eventually get it. Locking is a fairly solved problem anyway. 
+
+Instead, this section's example is the dining philosopher problem. There's $N$ philosophers who dine together around a circular table. Each person has a plate in front of them, and forks to their left and right. Three modes of behavior are possible. If they are \texttt{hungry}, they grab forks to their left, and right if not used and go into the \emph{eating} mode. Once they are done eating, they revert to the \emph{thinking} mode. And when they are done thinking, they go into the \emph{hungry} mode again. The challenge is to model the three modes without deadlock. Deadlock happens when a philosopher cannot transition into another behavior. 
+
+\texttt{pass10/deadlock.tla} gives a model with $N=3$ taking the description straight into code. Now while it's obvious that there will be contention around forks --- adjacent philosophers always share a fork between them when sitting in a circle --- it seems like every person will make progress. There has to be some time at which two forks are available. Running the model shows that deadlock occurs after checking some 1800 distinct states with a counter-example that consists of 13 steps away from the initial state. In particular, the trace shows this 13th state:
+
+\begin{verbatim}
+State 13: <P line 107, col 12 to line 114,
+          col 28 of module deadlock>
+/\ state = (0 :> "Hungry" @@ 
+            1 :> "Hungry" @@ 
+            2 :> "Hungry")
+/\ pc = (0 :> "E" @@ 1 :> "E" @@ 2 :> "E")
+/\ fork = (0 :> 1 @@ 1 :> 2 @@ 2 :> 0)
+\end{verbatim}
+
+All philosophers are in hungry mode, and each philosopher has one fork each \emph{i.e.} diner 0 has fork 1, diner 1 fork 2, and diner 2 fork 0. In addition they are all on label $E$ where they are waiting to get their second fork. But no fork is available. States 11 and 12 show two of the three philosopher's getti
+
+Turning deadlock detection off shows 1959 distinct states with a depth of 19. Thus the deadlock scenario doesn't happen immediately. Deadlock detection is enabled by default in both the IDE and on the command line. Confusingly, the command line switch \texttt{-deadlock} disables deadlock detection. See \texttt{TLA's} usage line by running \texttt{runtla -h} for more information.
 
 % ----------------------------------------------
 \subsection{Backdoor To The Command Line}
-You may prefer the IDE in \texttt{TLA}'s toolbox to the command line. But even command line users will find plenty to like. The IDE organizes and writes the multitude of configuration options into files you can copy and revise later. If you can't figure out the command line directly, make your model work in the IDE then leverage these files. The IDE logs command lines it runs in \texttt{\$HOME/.tlaplus/.metadata/.log}. Find the command line switches there.
+You may prefer the IDE in \texttt{TLA}'s toolbox to the command line. But even command line users will find plenty to like. The IDE organizes and writes the multitude of configuration options into files you can copy and revise later. If you can't figure out the command line directly, make your model work in the IDE then leverage those files. The IDE logs command lines it runs in \texttt{\$HOME/.tlaplus/.metadata/.log}. Find the command line switches there.
 
-The toolbox organizes its files as follows. Assume ``example.tla." Recall the \texttt{.cfg} files hold invariants and temporal formulas to be checked. And since, as a matter of practice, it's easier to validate models by placing different checks into different config files, the IDE supports multiple configurations (what it calls models perhaps unfortunately) per \texttt{.tla} file. Assume two configurations or models \texttt{Model\_1, Model\_2}:
+Recall the \texttt{.cfg} files hold the constant values. And since, as a matter of practice, it's easier to validate models by placing different checks into different configuration sets, the IDE supports multiple configurations (what it unfortunately calls models) per \texttt{.tla} file. In the IDE toolbox sense, different configurations refers both to constants whose number or values might change, plus all the invariants, temporal formulae, filters, and liveness checks enabled in that model \emph{e.g.} termination or deadlock. For this reason the toolbox collects all those variance points into a per subdirectory structure. Its approach is to make a new file set \texttt{MC.tla, MC.cfg} that include the user's model code. The toolbox runs \texttt{MC.tla} which is why you can't use that name yourself in the IDE.
+
+Assume \texttt{example.tla} and two configurations or models \texttt{Model\_1, Model\_2}. The directory format follows:
 
 \begin{itemize}
-\item file \texttt{example.tla}
-\item directory \texttt{example.toolbox}
+\item file \texttt{example.tla} \emph{i.e.} your model file
+\item subdirectory \texttt{example.toolbox}
 	\begin{itemize}
-		\item directory \texttt{Model\_1}
+		\item subdirectory \texttt{Model\_1}
+		\begin{itemize}
+			\item file \texttt{MC.cfg} 
+			\item file \texttt{MC.tla}
+			\item file \texttt{example.tla}
+		\end{itemize}
+	\end{itemize}
+	\begin{itemize}
+		\item subdirectory \texttt{Model\_2}
 		\begin{itemize}
 			\item file \texttt{MC.cfg}
 			\item file \texttt{MC.tla}
-			\item file \texttt{example.tla}, (copy) 
+			\item file \texttt{example.tla} 
 		\end{itemize}
 	\end{itemize}
 \end{itemize}
-  
-MC
+
+\noindent Each per configuration \texttt{example.tla} file is a copy of the original \texttt{example.tla} modified to include the invariants, temporal formulae, filters, and liveness checks for that configuration. The toolbox automatically makes it. Running the model means running \texttt{MC.tla} inside the configuration directory. \texttt{MC.tla} always includes \texttt{example.tla} in the same directory. I've omitted temporary files, for example, those containing console output and print results. The toolbox also writes the results of each model run into its own snapshot directory not shown here. They're transient output files. 
+
+Note that the IDE allows you to define constant values which are not actually valid with the \texttt{CONSTANT} command. To work around this, the toolbox makes a GUID in the form \texttt{constant\_<N>} where $N$ is a large, random integer. It then defines a constant with the modeler's real name referring to the name of the GUID in \texttt{MC.cfg}. It then assigns the actual values to the GUID in \texttt{MC.tla} as a global variable. The intuition is that those global variables are hidden and unknown to the programmer's \texttt{.tla} file and hence effectively constant.
+
+% ==============================================
+\section{Future Work}
+This note describes how \texttt{TLA+} models states through the dueling perspectives of program behavior, and state determination itself. Behavior is about following nodes via their edges, while states arise by carefully tracking what possible new state results after running all possible enabled actions (labels) in all their permutations. Behavior can be infinite while states are finite. \texttt{TLA+} uses depth first graph traversal to combine these facets which, for example, an AT\&T \texttt{.dot} artifact can be produced.
+
+This treatment, however, is woefully incomplete. For example, deadlock has strong connections to fairness which went unexamined. Notable tooling options were not discussed either. To contend with large state models, \texttt{TLA+} provides certain bounding constraints, and filtering modes that narrow \texttt{TLA}'s work to a subset of the full state space. PlusCal, while adequate for a lot of work, cannot do everything native \texttt{TLA+} can. Therefore programmers should be versed in writing native models, or at least know how to work in the last bits into native \texttt{TLA+} combining it with what PlusCal produces. Finally, the KV store examined here is trivial failing to admit uncontrived safety or liveness checks. 
+
+The KV store here is part of a larger effort to formally model Stanford's \texttt{RAM}Cloud, a distributed KV system with durable writes cite. Future notes therefore will eventually address all of the following,
+
+\begin{itemize}
+\item Fairness
+\item Safety, liveness checks
+\item Temporale formulae
+\item All within the context of a true, complex distributed KV store
+\end{itemize}
+% ==============================================
+\section{TLA+ Resources}
 
 % ==============================================
 \bibliographystyle{acm}
